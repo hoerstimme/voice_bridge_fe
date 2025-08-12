@@ -53,39 +53,39 @@ http://localhost:3000
 
 ---
 
-🎛 Configuration
+## 🎛 Configuration
 
 You can adjust detection parameters directly in AudioStreamer.js:
 
-const START_SPEAKING_THRESHOLD = 0.05; // Trigger when volume > this
-const STOP_SPEAKING_THRESHOLD = 0.01;  // Consider silence when volume < this
-const SILENCE_DURATION_SEC = 1;        // Silence length before sending chunk
+- const START_SPEAKING_THRESHOLD = 0.05; // Trigger when volume > this
+- const STOP_SPEAKING_THRESHOLD = 0.01;  // Consider silence when volume < this
+- const SILENCE_DURATION_SEC = 1;        // Silence length before sending chunk
 
-Available modes:
+## Available modes:
 
-    interval
-    silence
-    hybrid
-    full
+- interval
+- silence
+- hybrid
+- full
 
-🧩 How It Works
+## 🧩 How It Works
 
-    Capture Audio
-    Microphone audio is captured using the navigator.mediaDevices.getUserMedia API.
-    Process Audio in Real-Time
-    The app uses AudioContext and ScriptProcessorNode to analyze volume and detect speech start/stop events.
-    Segment Audio
-    Depending on the selected mode, chunks are prepared and sent to the backend.
-    Backend Processing
-    The backend (FastAPI) sends the chunk to ElevenLabs STS, receives processed audio, and streams it back.
-    Playback
-    The received audio is appended to a MediaSource and played automatically in the browser.
+- **Capture Audio**
+Microphone audio is captured using the navigator.mediaDevices.getUserMedia API.
+- **Process Audio in Real-Time
+The app uses AudioContext and ScriptProcessorNode to analyze volume and detect speech start/stop events.
+- **Segment Audio**
+Depending on the selected mode, chunks are prepared and sent to the backend.
+- **Backend Processing**
+The backend (FastAPI) sends the chunk to ElevenLabs STS, receives processed audio, and streams it back.
+- **Playback**
+The received audio is appended to a MediaSource and played automatically in the browser.
 
-⚠ Troubleshooting
+## ⚠ Troubleshooting
 
-    No microphone access prompt
-    Check browser permissions and ensure HTTPS is used if running in production.
-    No audio playback
-    Ensure your backend is reachable and returning audio/webm or compatible formats.
-    Speech cuts off mid-word
-    Adjust STOP_SPEAKING_THRESHOLD and SILENCE_DURATION_SEC in AudioStreamer.js.
+- **No microphone access prompt**
+Check browser permissions and ensure HTTPS is used if running in production.
+- **No audio playback**
+Ensure your backend is reachable and returning audio/webm or compatible formats.
+- **Speech cuts off mid-word**
+Adjust STOP_SPEAKING_THRESHOLD and SILENCE_DURATION_SEC in AudioStreamer.js.
