@@ -212,7 +212,7 @@ function AudioStreamer() {
   const sendChunk = async (blob) => {
     const formData = new FormData();
     formData.append('audio_file', blob, 'chunk.wav');
-    formData.append('voice_name', useVoiceStore.getState());
+    formData.append('voice_name', useVoiceStore.getState().selectedVoice);
     try {
       const response = await fetch('http://127.0.0.1:8001/convert_voice_stream_bytes_webm', {
         method: 'POST',
