@@ -71,21 +71,21 @@ You can adjust detection parameters directly in AudioStreamer.js:
 ## 🧩 How It Works
 
 - **Capture Audio**
-Microphone audio is captured using the navigator.mediaDevices.getUserMedia API.
-- **Process Audio in Real-Time
-The app uses AudioContext and ScriptProcessorNode to analyze volume and detect speech start/stop events.
+  - Microphone audio is captured using the navigator.mediaDevices.getUserMedia API.
+- **Process Audio in Real-Time**
+  - The app uses AudioContext and ScriptProcessorNode to analyze volume and detect speech start/stop events.
 - **Segment Audio**
-Depending on the selected mode, chunks are prepared and sent to the backend.
+  - Depending on the selected mode, chunks are prepared and sent to the backend.
 - **Backend Processing**
-The backend (FastAPI) sends the chunk to ElevenLabs STS, receives processed audio, and streams it back.
+  - The backend (FastAPI) sends the chunk to ElevenLabs STS, receives processed audio, and streams it back.
 - **Playback**
-The received audio is appended to a MediaSource and played automatically in the browser.
+  - The received audio is appended to a MediaSource and played automatically in the browser.
 
 ## ⚠ Troubleshooting
 
 - **No microphone access prompt**
-Check browser permissions and ensure HTTPS is used if running in production.
+  - Check browser permissions and ensure HTTPS is used if running in production.
 - **No audio playback**
-Ensure your backend is reachable and returning audio/webm or compatible formats.
+  - Ensure your backend is reachable and returning audio/webm or compatible formats.
 - **Speech cuts off mid-word**
-Adjust STOP_SPEAKING_THRESHOLD and SILENCE_DURATION_SEC in AudioStreamer.js.
+  - Adjust STOP_SPEAKING_THRESHOLD and SILENCE_DURATION_SEC in AudioStreamer.js.
