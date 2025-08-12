@@ -1,70 +1,91 @@
-# Getting Started with Create React App
+# 🎙 ElevenLabs STS (Speech-to-Speech) - React Frontend
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+This repository contains a **React-based** frontend implementation for streaming microphone input to an ElevenLabs **Speech-to-Speech (STS)** backend.  
+The application captures audio from the user's microphone, segments it using different modes (interval-based, silence-based, hybrid, or full recording), and sends it to the backend for STS processing.
 
-## Available Scripts
+---
 
-In the project directory, you can run:
+## 🚀 Features
 
-### `npm start`
+- **Real-time microphone capture** using Web Audio API.
+- **Speech activity detection** based on volume thresholds.
+- **Multiple recording modes**:
+  - **Interval:** Send audio chunks every fixed interval (e.g., 2 seconds).
+  - **Silence:** Send chunks when a pause in speech is detected.
+  - **Hybrid:** Combines silence detection with periodic flushing.
+  - **Full:** Records the entire session and sends it once recording stops.
+- **Immediate playback** of returned processed audio from the backend.
+- **Configurable thresholds** for speech start/stop detection.
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+---
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## 📋 Prerequisites
 
-### `npm test`
+Make sure you have the following installed:
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+- [Node.js](https://nodejs.org/) (v18+ recommended)
+- npm (comes with Node.js) or yarn
+- A running backend API compatible with **`/convert_voice_stream_bytes_webm`** endpoint.
+- ElevenLabs API key configured on the backend.
 
-### `npm run build`
+---
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## 🛠 Installation & Setup
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### 1️⃣ Clone the Repository
+```bash
+git clone https://github.com/hoerstimme/voice_bridge_fe.git
+```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+### 2️⃣ Install Project Dependencies
+```bash
+npm install
+```
 
-### `npm run eject`
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+### 3️⃣ Start the Development Server
+```bash
+npm start
+```
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+By default, the app will launch in your browser at:
+http://localhost:3000
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+---
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+🎛 Configuration
 
-## Learn More
+You can adjust detection parameters directly in AudioStreamer.js:
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+const START_SPEAKING_THRESHOLD = 0.05; // Trigger when volume > this
+const STOP_SPEAKING_THRESHOLD = 0.01;  // Consider silence when volume < this
+const SILENCE_DURATION_SEC = 1;        // Silence length before sending chunk
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+Available modes:
 
-### Code Splitting
+    interval
+    silence
+    hybrid
+    full
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+🧩 How It Works
 
-### Analyzing the Bundle Size
+    Capture Audio
+    Microphone audio is captured using the navigator.mediaDevices.getUserMedia API.
+    Process Audio in Real-Time
+    The app uses AudioContext and ScriptProcessorNode to analyze volume and detect speech start/stop events.
+    Segment Audio
+    Depending on the selected mode, chunks are prepared and sent to the backend.
+    Backend Processing
+    The backend (FastAPI) sends the chunk to ElevenLabs STS, receives processed audio, and streams it back.
+    Playback
+    The received audio is appended to a MediaSource and played automatically in the browser.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+⚠ Troubleshooting
 
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+    No microphone access prompt
+    Check browser permissions and ensure HTTPS is used if running in production.
+    No audio playback
+    Ensure your backend is reachable and returning audio/webm or compatible formats.
+    Speech cuts off mid-word
+    Adjust STOP_SPEAKING_THRESHOLD and SILENCE_DURATION_SEC in AudioStreamer.js.
