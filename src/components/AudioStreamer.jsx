@@ -1,17 +1,18 @@
 import React, { useRef, useState, useEffect } from 'react';
 import useVoiceStore from "../store/useVoiceStore";
 
-
-const START_SPEAKING_THRESHOLD = 0.05; // trigger when volume > this
-const STOP_SPEAKING_THRESHOLD = 0.01;  // consider silence when volume < this
-const SILENCE_DURATION_SEC = 1;
+// put original values here
+const START_SPEAKING_THRESHOLD = 0.015; // V1: 0.05,V2:0.03 trigger when volume > this
+const STOP_SPEAKING_THRESHOLD = 0.015;  //V1:0.015,V2:0.015 consider silence when volume < this
+const SILENCE_DURATION_SEC = 1; //V1: 1,V2:0.35
+const HYBRID_FLUSH_INTERVAL = 2000; //V1: 1000 V2: 3000, V3:1500 (glucksend) made new variable in line  138
 
 function AudioStreamer() {
   const [recording, setRecording] = useState(false);
   const [mode, setMode] = useState('interval'); // interval | silence | full | hybrid
 
   const audioContextRef = useRef(null);
-  const sourceRef = useRef(null);
+  const sourceRef = useRef(null); 
   const processorRef = useRef(null);
   const mediaStreamRef = useRef(null);
   const chunksRef = useRef([]);
@@ -27,6 +28,12 @@ function AudioStreamer() {
   const chunkQueueRef = useRef([]);
   const isAppendingRef = useRef(false);
 
+ // NEU Pre-roll constants and ref
+  const PRE_ROLL_MS = 300;
+  const preRollRef = useRef([]);
+  let preRollSamplesTarget = 0;
+  // NEU Ende
+
 
   const handleNewChunk = (arrayBuffer) => {
     chunkQueueRef.current.push(arrayBuffer);
@@ -35,7 +42,8 @@ function AudioStreamer() {
     }
   };
 
-  const appendNextChunk = () => {
+//OLD
+/*   const appendNextChunk = () => {
     const sourceBuffer = sourceBufferRef.current;
     if (!sourceBuffer || sourceBuffer.updating) return;
     const queue = chunkQueueRef.current;
@@ -50,7 +58,42 @@ function AudioStreamer() {
       audioRef.current.play().catch(() => {});
     }
   };
+ */
+//Old ENDE
 
+//NEU
+const appendNextChunk = () => {
+  const sourceBuffer = sourceBufferRef.current;
+  if (!sourceBuffer) return;
+
+  if (sourceBuffer.updating) {
+    setTimeout(appendNextChunk, 30); // warte kurz, versuche erneut
+    return;
+  }
+
+  const queue = chunkQueueRef.current;
+  if (!queue.length) {
+    isAppendingRef.current = false;
+    return;
+  }
+
+  const nextChunk = queue.shift();
+  isAppendingRef.current = true;
+
+  try {
+    sourceBuffer.appendBuffer(nextChunk);
+  } catch (err) {
+    console.warn("appendBuffer failed:", err);
+    queue.unshift(nextChunk);
+    setTimeout(appendNextChunk, 100);
+    return;
+  }
+
+  if (audioRef.current && audioRef.current.paused && queue.length > 2) {
+    audioRef.current.play().catch(() => {});
+  }
+};
+//NEU ENDE
 
   useEffect(() => {
       if (processorRef.current) processorRef.current.disconnect();
@@ -91,6 +134,10 @@ function AudioStreamer() {
     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
     audioContextRef.current = audioContext;
 
+    // NEU define pre-roll target *after* creating audioContext
+    preRollSamplesTarget = Math.round(audioContext.sampleRate * (PRE_ROLL_MS / 1000));
+    // NEU Ende 
+
     const source = audioContext.createMediaStreamSource(stream);
     const processor = audioContext.createScriptProcessor(4096, 1, 1);
     source.connect(processor);
@@ -113,6 +160,16 @@ function AudioStreamer() {
       const input = e.inputBuffer.getChannelData(0);
       const buffer = new Float32Array(input);
 
+      //  NEU Pre-roll handling
+      // 🟢 PRE-ROLL: always fill the rolling buffer with latest samples
+      preRollRef.current.push(buffer);
+      let total = preRollRef.current.reduce((n, b) => n + b.length, 0);
+      while (total > preRollSamplesTarget) {
+      preRollRef.current.shift();
+      total = preRollRef.current.reduce((n, b) => n + b.length, 0);
+      }
+      // NEU Ende 
+
       const now = Date.now();
       const volume = Math.sqrt(buffer.reduce((a, b) => a + b * b, 0) / buffer.length);
       console.log(volume);
@@ -121,6 +178,10 @@ function AudioStreamer() {
       if (!isSpeaking && volume > START_SPEAKING_THRESHOLD) {
         isSpeaking = true;
         silenceStartTime = null;
+    // NEU: In silence and hybrid modes, prepend pre-roll buffers
+      if (mode === 'silence') silenceBufferRef.current = [...preRollRef.current];
+      if (mode === 'hybrid') hybridChunksRef.current = [...preRollRef.current];
+      // NEU Ende 
 
         if (mode === 'silence') silenceBufferRef.current = [];
         if (mode === 'hybrid') hybridChunksRef.current = [];
@@ -162,7 +223,7 @@ function AudioStreamer() {
           hybridChunksRef.current.push(buffer);
         }
 
-        const timeSinceLastFlush = now - hybridLastFlushRef.current > 2000;
+        const timeSinceLastFlush = now - hybridLastFlushRef.current > HYBRID_FLUSH_INTERVAL;
 
         if (timeSinceLastFlush && volume < STOP_SPEAKING_THRESHOLD) {
           isSpeaking = false;
@@ -250,6 +311,18 @@ function AudioStreamer() {
     view.setUint16(34, 16, true);
     writeString(view, 36, 'data');
     view.setUint32(40, mergedBuffer.length * 2, true);
+/* //NEU Fade-out
+// Apply gentle fade-out over last 80 ms
+    const fadeSamples = Math.round(sampleRate * 0.12); 
+    for (let i = 0; i < fadeSamples; i++) {
+      const idx = mergedBuffer.length - i - 1;
+      if (idx >= 0) {
+        const fadeFactor = 1- i / fadeSamples;
+        mergedBuffer[idx] *= fadeFactor;
+      }
+    }
+//NEU Ende */
+
     for (let i = 0, idx = 44; i < mergedBuffer.length; i++, idx += 2) {
       const s = Math.max(-1, Math.min(1, mergedBuffer[i]));
       view.setInt16(idx, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
