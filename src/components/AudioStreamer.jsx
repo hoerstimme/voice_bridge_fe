@@ -2,10 +2,10 @@ import React, { useRef, useState, useEffect } from 'react';
 import useVoiceStore from "../store/useVoiceStore";
 
 // put original values here
-const START_SPEAKING_THRESHOLD = 0.015; // V1: 0.05,V2:0.03 trigger when volume > this
-const STOP_SPEAKING_THRESHOLD = 0.015;  //V1:0.015,V2:0.015 consider silence when volume < this
+const START_SPEAKING_THRESHOLD = 0.018; // V1: 0.05,V2:0.03, V3: 0.02 trigger when volume > this
+const STOP_SPEAKING_THRESHOLD = 0.010;  //V1:0.015,V2:0.015 consider silence when volume < this
 const SILENCE_DURATION_SEC = 1; //V1: 1,V2:0.35
-const HYBRID_FLUSH_INTERVAL = 2000; //V1: 1000 V2: 3000, V3:1500 (glucksend) made new variable in line  138
+const HYBRID_FLUSH_INTERVAL = 2500; //V1: 1000 V2: 3000, V3:1500 (glucksend) made new variable in line  138
 
 function AudioStreamer() {
   const [recording, setRecording] = useState(false);
@@ -28,11 +28,11 @@ function AudioStreamer() {
   const chunkQueueRef = useRef([]);
   const isAppendingRef = useRef(false);
 
- // NEU Pre-roll constants and ref
-  const PRE_ROLL_MS = 300;
+ // NEW Pre-roll constants and ref
+  const PRE_ROLL_MS = 600; //V1:400
   const preRollRef = useRef([]);
   let preRollSamplesTarget = 0;
-  // NEU Ende
+  // NEW End
 
 
   const handleNewChunk = (arrayBuffer) => {
@@ -59,9 +59,9 @@ function AudioStreamer() {
     }
   };
  */
-//Old ENDE
+//Old END
 
-//NEU
+//NEW
 const appendNextChunk = () => {
   const sourceBuffer = sourceBufferRef.current;
   if (!sourceBuffer) return;
@@ -93,7 +93,9 @@ const appendNextChunk = () => {
     audioRef.current.play().catch(() => {});
   }
 };
-//NEU ENDE
+//NEW END
+
+
 
   useEffect(() => {
       if (processorRef.current) processorRef.current.disconnect();
@@ -128,15 +130,27 @@ const appendNextChunk = () => {
     };
   }, []);
 
-  const startRecording = async () => {
+  // NEW debug downloadBlob function START
+const downloadBlob = (blob, filename) => {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+  };
+// NEW debug downloadBlob function END
+
+  // OLD processor-Function 
+  /* const startRecording = async () => {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     mediaStreamRef.current = stream;
     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
     audioContextRef.current = audioContext;
 
-    // NEU define pre-roll target *after* creating audioContext
+    // NEW define pre-roll target *after* creating audioContext
     preRollSamplesTarget = Math.round(audioContext.sampleRate * (PRE_ROLL_MS / 1000));
-    // NEU Ende 
+    // NEW Ende 
 
     const source = audioContext.createMediaStreamSource(stream);
     const processor = audioContext.createScriptProcessor(4096, 1, 1);
@@ -160,7 +174,7 @@ const appendNextChunk = () => {
       const input = e.inputBuffer.getChannelData(0);
       const buffer = new Float32Array(input);
 
-      //  NEU Pre-roll handling
+      //  NEW Pre-roll handling
       // 🟢 PRE-ROLL: always fill the rolling buffer with latest samples
       preRollRef.current.push(buffer);
       let total = preRollRef.current.reduce((n, b) => n + b.length, 0);
@@ -168,7 +182,7 @@ const appendNextChunk = () => {
       preRollRef.current.shift();
       total = preRollRef.current.reduce((n, b) => n + b.length, 0);
       }
-      // NEU Ende 
+      // NEW End
 
       const now = Date.now();
       const volume = Math.sqrt(buffer.reduce((a, b) => a + b * b, 0) / buffer.length);
@@ -178,14 +192,15 @@ const appendNextChunk = () => {
       if (!isSpeaking && volume > START_SPEAKING_THRESHOLD) {
         isSpeaking = true;
         silenceStartTime = null;
-    // NEU: In silence and hybrid modes, prepend pre-roll buffers
+    // NEW: In silence and hybrid modes, prepend pre-roll buffers
       if (mode === 'silence') silenceBufferRef.current = [...preRollRef.current];
       if (mode === 'hybrid') hybridChunksRef.current = [...preRollRef.current];
-      // NEU Ende 
+      // NEW End 
 
-        if (mode === 'silence') silenceBufferRef.current = [];
-        if (mode === 'hybrid') hybridChunksRef.current = [];
-
+    //OLD
+      //if (mode === 'silence') silenceBufferRef.current = [];
+      //if (mode === 'hybrid') hybridChunksRef.current = []; 
+    //OLD Ende
         console.log("🎙️ Start speaking");
       }
 
@@ -205,6 +220,13 @@ const appendNextChunk = () => {
         }
 
         if (silentLongEnough && isSpeaking) {
+
+            // NEW Overlap: letzten Buffer 1–2 mal anhängen
+          for (let i = 0; i < 1; i++) {
+          silenceBufferRef.current.push(new Float32Array(buffer));
+         }
+            // NEW Overlap End
+    
           isSpeaking = false;
           silenceStartTime = null;
 
@@ -214,7 +236,7 @@ const appendNextChunk = () => {
             sendChunk(wav);
           }
           console.log("⏹️ Stop speaking (silence mode)");
-        }
+      }
       }
 
       // Hybrid mode
@@ -249,7 +271,144 @@ const appendNextChunk = () => {
     setRecording(true);
     sourceRef.current = source;
     processorRef.current = processor;
+  };  */ 
+  // OLD startRecording processor Ende
+
+  // NEW AudioWorkletNode START
+  const startRecording = async () => {
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  mediaStreamRef.current = stream;
+
+  const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  audioContextRef.current = audioContext;
+
+  // Pre-Roll setup
+  preRollSamplesTarget = Math.round(audioContext.sampleRate * (PRE_ROLL_MS / 1000));
+
+  const source = audioContext.createMediaStreamSource(stream);
+  sourceRef.current = source;
+
+  // 🎧 AudioWorklet laden
+  await audioContext.audioWorklet.addModule("/processor.js");
+
+  // 🎙️ Worklet-Node erstellen
+  const vadNode = new AudioWorkletNode(audioContext, "vad-processor");
+  source.connect(vadNode);
+  vadNode.connect(audioContext.destination);
+  processorRef.current = vadNode;
+
+  let isSpeaking = false;
+  let silenceStartTime = null;
+
+  // Daten aus AudioWorklet empfangen
+  vadNode.port.onmessage = (event) => {
+    const { volume, buffer } = event.data;
+    const floatBuffer = new Float32Array(buffer);
+
+    // --- Pre-Roll aktualisieren
+    preRollRef.current.push(floatBuffer);
+    let total = preRollRef.current.reduce((n, b) => n + b.length, 0);
+    while (total > preRollSamplesTarget) {
+      preRollRef.current.shift();
+      total = preRollRef.current.reduce((n, b) => n + b.length, 0);
+    }
+
+    const now = Date.now();
+
+    // --- Start Speaking
+    if (!isSpeaking && volume > START_SPEAKING_THRESHOLD) {
+      isSpeaking = true;
+      silenceStartTime = null;
+
+      if (mode === "silence") silenceBufferRef.current = [...preRollRef.current];
+      if (mode === "hybrid") hybridChunksRef.current = [...preRollRef.current];
+
+      console.log("🎙️ Start speaking");
+    }
+
+    // --- Silence Detection
+    if (isSpeaking && volume < STOP_SPEAKING_THRESHOLD) {
+      if (!silenceStartTime) silenceStartTime = now;
+    } else if (volume >= STOP_SPEAKING_THRESHOLD) {
+      silenceStartTime = null;
+    }
+
+    const silentLongEnough =
+      silenceStartTime &&
+      now - silenceStartTime > SILENCE_DURATION_SEC * 1000;
+
+    // --- Silence Mode
+    if (mode === "silence") {
+      if (isSpeaking) silenceBufferRef.current.push(floatBuffer);
+
+      if (silentLongEnough && isSpeaking) {
+        // kleines Overlap für Natürlichkeit
+        silenceBufferRef.current.push(new Float32Array(floatBuffer));
+        isSpeaking = false;
+        silenceStartTime = null;
+
+        if (silenceBufferRef.current.length > 0) {
+            const wav = exportWAV(
+            silenceBufferRef.current,
+            audioContext.sampleRate
+          );
+          // NEW downloadBlob call for debugging START
+          downloadBlob(wav, 'debug.wav');
+          // NEW downloadBlob call for debugging END
+          silenceBufferRef.current = [];
+          sendChunk(wav);
+        }
+        console.log("⏹️ Stop speaking (silence mode)");
+      }
+    }
+
+    // --- Hybrid Mode
+    if (mode === "hybrid") {
+      if (isSpeaking) hybridChunksRef.current.push(floatBuffer);
+
+      const timeSinceLastFlush =
+        now - hybridLastFlushRef.current > HYBRID_FLUSH_INTERVAL;
+
+      if (timeSinceLastFlush && volume < STOP_SPEAKING_THRESHOLD) {
+        isSpeaking = false;
+        silenceStartTime = null;
+        hybridLastFlushRef.current = now;
+
+        if (hybridChunksRef.current.length > 0) {
+          const wav = exportWAV(
+            hybridChunksRef.current,
+            audioContext.sampleRate
+          );
+          hybridChunksRef.current = [];
+          sendChunk(wav);
+        }
+        console.log("⏹️ Stop speaking / flush (hybrid mode)");
+      }
+    }
+
+    // --- Interval / Full Mode
+    if (mode === "interval" || mode === "full") {
+      chunksRef.current.push(floatBuffer);
+      fullRecordingRef.current.push(floatBuffer);
+    }
   };
+
+  // --- Interval Mode Chunk Flush
+  if (mode === "interval") {
+    intervalRef.current = setInterval(() => {
+      if (chunksRef.current.length) {
+        const wavBlob = exportWAV(chunksRef.current, audioContext.sampleRate);
+        chunksRef.current = [];
+        sendChunk(wavBlob);
+      }
+    }, 2000);
+  }
+
+  setRecording(true);
+};
+
+  //New AudioWorkletNode instead of ScriptProcessorNode ENDE
+
 
 
   const stopRecording = () => {
@@ -311,9 +470,9 @@ const appendNextChunk = () => {
     view.setUint16(34, 16, true);
     writeString(view, 36, 'data');
     view.setUint32(40, mergedBuffer.length * 2, true);
-/* //NEU Fade-out
+ //NEW Fade-out
 // Apply gentle fade-out over last 80 ms
-    const fadeSamples = Math.round(sampleRate * 0.12); 
+    const fadeSamples = Math.round(sampleRate * 0.08); 
     for (let i = 0; i < fadeSamples; i++) {
       const idx = mergedBuffer.length - i - 1;
       if (idx >= 0) {
@@ -321,7 +480,7 @@ const appendNextChunk = () => {
         mergedBuffer[idx] *= fadeFactor;
       }
     }
-//NEU Ende */
+//NEW End 
 
     for (let i = 0, idx = 44; i < mergedBuffer.length; i++, idx += 2) {
       const s = Math.max(-1, Math.min(1, mergedBuffer[i]));
