@@ -111,3 +111,27 @@ You can adjust detection parameters directly in AudioStreamer.js:
   - Ensure your backend is reachable and returning audio/webm or compatible formats.
 - **Speech cuts off mid-word**
   - Adjust STOP_SPEAKING_THRESHOLD and SILENCE_DURATION_SEC in AudioStreamer.js.
+
+
+
+## 🪪 License
+
+The software is released under the [PolyForm Noncommercial License 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0/),  
+which permits noncommercial use, modification, and distribution.
+
+That means:
+
+- ✅ You can **view, clone, and modify** the code for **personal, academic, or research use**.
+- 🚫 You **cannot use, sell, or integrate** this code in **commercial applications**.
+- 🧠 You must **include this license** in any copies or derivatives.
+
+For commercial or partnership inquiries, please contact:  
+📧 ps@sinceare.com
+
+See the full license text at:  
+🔗 [PolyForm Noncommercial License 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0/)
+
+## 🏢 Ownership
+
+All code and related assets in this repository are the intellectual property of  
+**sinceare UG (haftungsbeschränkt)**, Berlin, Germany.
