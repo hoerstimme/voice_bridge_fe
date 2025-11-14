@@ -1,3 +1,20 @@
+/*
+Ownership & License Notice
+
+All code and related assets in this file are the intellectual property of
+sinceare UG (haftungsbeschränkt), Berlin, Germany.
+
+Released under the PolyForm Noncommercial License 1.0.0:
+https://polyformproject.org/licenses/noncommercial/1.0.0/
+
+- You may view, clone, and modify this code for personal, academic, or research use.
+- Commercial use, sale, or integration in commercial applications is prohibited.
+- You must include this license notice in any copies or derivatives.
+
+For commercial or partnership inquiries, contact: ps@sinceare.com
+*/
+
+
 import React, { useRef, useState, useEffect } from 'react';
 import useVoiceStore from "../store/useVoiceStore";
 
@@ -6,6 +23,9 @@ const START_SPEAKING_THRESHOLD = 0.018; // V1: 0.05,V2:0.03, V3: 0.02 trigger wh
 const STOP_SPEAKING_THRESHOLD = 0.010;  //V1:0.015,V2:0.015 consider silence when volume < this
 const SILENCE_DURATION_SEC = 1; //V1: 1,V2:0.35
 const HYBRID_FLUSH_INTERVAL = 2500; //V1: 1000 V2: 3000, V3:1500 (glucksend) made new variable in line  138
+// NEW WebRTC constants
+const USE_WEBRTC = true; // Toggle für WebRTC vs HTTP
+const SIGNALING_SERVER = 'ws://127.0.0.1:8002'; // WebSocket für Signaling
 
 function AudioStreamer() {
   const [recording, setRecording] = useState(false);
@@ -27,6 +47,10 @@ function AudioStreamer() {
   const sourceBufferRef = useRef(null);
   const chunkQueueRef = useRef([]);
   const isAppendingRef = useRef(false);
+  // NEW WebRTC refs
+const peerConnectionRef = useRef(null);
+const dataChannelRef = useRef(null);
+const signalingSocketRef = useRef(null);
 
  // NEW Pre-roll constants and ref
   const PRE_ROLL_MS = 600; //V1:400
@@ -41,6 +65,27 @@ function AudioStreamer() {
       appendNextChunk();
     }
   };
+
+  // WebRTC Setup 
+const setupWebRTC = async () => {
+  const pc = new RTCPeerConnection({
+    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+  });
+  peerConnectionRef.current = pc;
+  
+  const dc = pc.createDataChannel('audio', {
+    ordered: false,
+    maxRetransmits: 0
+  });
+  dataChannelRef.current = dc;
+  
+  dc.onmessage = (event) => {
+    // Chunk vom Backend empfangen
+    handleNewChunk(event.data); // ← Nutzt deine bestehende Funktion!
+  };
+  
+  // ... Rest des WebRTC Setup (Signaling etc.)
+};
 
 //OLD
 /*   const appendNextChunk = () => {
@@ -67,9 +112,10 @@ const appendNextChunk = () => {
   if (!sourceBuffer) return;
 
   if (sourceBuffer.updating) {
-    setTimeout(appendNextChunk, 30); // warte kurz, versuche erneut
+    setTimeout(appendNextChunk, 30); // workaround, needs updateend event listener
     return;
   }
+
 
   const queue = chunkQueueRef.current;
   if (!queue.length) {
@@ -300,12 +346,12 @@ const downloadBlob = (blob, filename) => {
   let isSpeaking = false;
   let silenceStartTime = null;
 
-  // Daten aus AudioWorklet empfangen
+  // Get data out of the AudioWorklet
   vadNode.port.onmessage = (event) => {
     const { volume, buffer } = event.data;
     const floatBuffer = new Float32Array(buffer);
 
-    // --- Pre-Roll aktualisieren
+    // --- Pre-Roll updating
     preRollRef.current.push(floatBuffer);
     let total = preRollRef.current.reduce((n, b) => n + b.length, 0);
     while (total > preRollSamplesTarget) {
@@ -430,9 +476,10 @@ const downloadBlob = (blob, filename) => {
   };
 
   const sendChunk = async (blob) => {
+/*  //without WebRTC
     const formData = new FormData();
     formData.append('audio_file', blob, 'chunk.wav');
-    formData.append('voice_name', useVoiceStore.getState().selectedVoice);
+    formData.append('voice_name', useVoiceStore.getState().selectedVoice); 
     try {
       const response = await fetch('http://127.0.0.1:8001/convert_voice_stream_bytes_webm', {
         method: 'POST',
@@ -443,6 +490,24 @@ const downloadBlob = (blob, filename) => {
       handleNewChunk(arrayBuffer);
     } catch (err) {
       console.error('Error sending chunk:', err);
+    }
+      */
+
+    //Alternative with WebRTC V1
+    if (USE_WEBRTC && dataChannelRef.current?.readyState === 'open') {
+      const arrayBuffer = await blob.arrayBuffer();
+      dataChannelRef.current.send(arrayBuffer);
+    } else {
+      // Dein bestehender HTTP Code bleibt!
+      const formData = new FormData();
+      formData.append('audio_file', blob, 'chunk.wav');
+      formData.append('voice_name', useVoiceStore.getState().selectedVoice);
+      const response = await fetch('http://127.0.0.1:8001/convert_voice_stream_bytes_webm', {
+        method: 'POST',
+        body: formData,
+      });
+    const arrayBuffer = await response.arrayBuffer();
+    handleNewChunk(arrayBuffer);
     }
   };
 
