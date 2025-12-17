@@ -75,7 +75,7 @@ http://localhost:3000
 
 ---
 ## Running in docker
-1. Build docker image `docker build -t voice_bridge_fe`
+1. Build docker image `docker build -t voice_bridge_fe .`
 2. Run the container `docker run -p 3000:3000 voice_bridge_fe`
 3. You can access the website at http://localhost:3000
 4. Make sure that backend is running at http://localhost:8001
