@@ -8,7 +8,7 @@ const VoiceSelector = () => {
   const { selectedVoice, setSelectedVoice } = useVoiceStore();
 
   useEffect(() => {
-    fetch('http://localhost:8001/available_voices')
+    fetch('/api/available_voices')
       .then((res) => res.json())
       .then((data) => {
         setLoading(false);
