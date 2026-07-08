@@ -1,14 +1,14 @@
 import React, { useRef, useState, useEffect } from 'react';
 import useVoiceStore from "../store/useVoiceStore";
 
-
-const START_SPEAKING_THRESHOLD = 0.05; // trigger when volume > this
-const STOP_SPEAKING_THRESHOLD = 0.01;  // consider silence when volume < this
+const START_SPEAKING_THRESHOLD = 0.05;
+const STOP_SPEAKING_THRESHOLD = 0.01;
 const SILENCE_DURATION_SEC = 1;
 
 function AudioStreamer() {
   const [recording, setRecording] = useState(false);
-  const [mode, setMode] = useState('interval'); // interval | silence | full | hybrid
+  const [mode, setMode] = useState('interval');
+  const [isPlaying, setIsPlaying] = useState(false);
 
   const audioContextRef = useRef(null);
   const sourceRef = useRef(null);
@@ -21,71 +21,68 @@ function AudioStreamer() {
   const hybridChunksRef = useRef([]);
   const hybridLastFlushRef = useRef(Date.now());
 
-  const audioRef = useRef(null);
-  const mediaSourceRef = useRef(null);
-  const sourceBufferRef = useRef(null);
+  const playbackContextRef = useRef(null);
+  const nextStartTimeRef = useRef(0);
   const chunkQueueRef = useRef([]);
   const isAppendingRef = useRef(false);
 
+  const getPlaybackContext = () => {
+    if (!playbackContextRef.current) {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      playbackContextRef.current = new Ctx();
+    }
+    if (playbackContextRef.current.state === 'suspended') {
+      playbackContextRef.current.resume();
+    }
+    return playbackContextRef.current;
+  };
+
+  const appendNextChunk = async () => {
+    if (isAppendingRef.current) return;
+    isAppendingRef.current = true;
+    setIsPlaying(true);
+
+    const queue = chunkQueueRef.current;
+    while (queue.length) {
+      const nextChunk = queue.shift();
+      const ctx = getPlaybackContext();
+      try {
+        const audioBuffer = await ctx.decodeAudioData(nextChunk.slice(0));
+        const source = ctx.createBufferSource();
+        source.buffer = audioBuffer;
+        source.connect(ctx.destination);
+
+        const startAt = Math.max(ctx.currentTime, nextStartTimeRef.current);
+        source.start(startAt);
+        nextStartTimeRef.current = startAt + audioBuffer.duration;
+      } catch (err) {
+        console.error('Error decoding audio chunk:', err);
+      }
+    }
+
+    isAppendingRef.current = false;
+    setIsPlaying(false);
+  };
 
   const handleNewChunk = (arrayBuffer) => {
     chunkQueueRef.current.push(arrayBuffer);
-    if (!isAppendingRef.current) {
-      appendNextChunk();
-    }
+    appendNextChunk();
   };
-
-  const appendNextChunk = () => {
-    const sourceBuffer = sourceBufferRef.current;
-    if (!sourceBuffer || sourceBuffer.updating) return;
-    const queue = chunkQueueRef.current;
-    if (!queue.length) {
-      isAppendingRef.current = false;
-      return;
-    }
-    const nextChunk = queue.shift();
-    isAppendingRef.current = true;
-    sourceBuffer.appendBuffer(nextChunk);
-    if (audioRef.current && audioRef.current.paused) {
-      audioRef.current.play().catch(() => {});
-    }
-  };
-
 
   useEffect(() => {
-      if (processorRef.current) processorRef.current.disconnect();
-      if (sourceRef.current) sourceRef.current.disconnect();
+    if (processorRef.current) processorRef.current.disconnect();
+    if (sourceRef.current) sourceRef.current.disconnect();
 
-      fullRecordingRef.current = [];
-      chunksRef.current = [];
-      hybridChunksRef.current = [];
-      silenceBufferRef.current = [];
+    fullRecordingRef.current = [];
+    chunksRef.current = [];
+    hybridChunksRef.current = [];
+    silenceBufferRef.current = [];
   }, [mode]);
 
-  useEffect(() => {
-    const audioEl = audioRef.current;
-    if (!audioEl) return;
-    const mediaSource = new MediaSource();
-    mediaSourceRef.current = mediaSource;
-    audioEl.src = URL.createObjectURL(mediaSource);
-    mediaSource.addEventListener('sourceopen', () => {
-      const sourceBuffer = mediaSource.addSourceBuffer('audio/webm; codecs="opus"');
-      sourceBuffer.mode = 'sequence';
-      sourceBufferRef.current = sourceBuffer;
-      sourceBuffer.addEventListener('updateend', appendNextChunk);
-    });
-    return () => {
-      if (mediaSourceRef.current?.readyState === 'open') {
-        mediaSourceRef.current.endOfStream();
-      }
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.src = '';
-      }
-    };
-  }, []);
-
   const startRecording = async () => {
+    getPlaybackContext();
+    nextStartTimeRef.current = 0;
+
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     mediaStreamRef.current = stream;
     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -115,20 +112,15 @@ function AudioStreamer() {
 
       const now = Date.now();
       const volume = Math.sqrt(buffer.reduce((a, b) => a + b * b, 0) / buffer.length);
-      console.log(volume);
 
-      // Detect start of speech
       if (!isSpeaking && volume > START_SPEAKING_THRESHOLD) {
         isSpeaking = true;
         silenceStartTime = null;
 
         if (mode === 'silence') silenceBufferRef.current = [];
         if (mode === 'hybrid') hybridChunksRef.current = [];
-
-        console.log("🎙️ Start speaking");
       }
 
-      // Detect potential silence after speaking
       if (isSpeaking && volume < STOP_SPEAKING_THRESHOLD) {
         if (!silenceStartTime) silenceStartTime = now;
       } else if (volume >= STOP_SPEAKING_THRESHOLD) {
@@ -137,7 +129,6 @@ function AudioStreamer() {
 
       const silentLongEnough = silenceStartTime && (now - silenceStartTime > SILENCE_DURATION_SEC * 1000);
 
-      // Silence mode
       if (mode === 'silence') {
         if (isSpeaking) {
           silenceBufferRef.current.push(buffer);
@@ -152,11 +143,9 @@ function AudioStreamer() {
             silenceBufferRef.current = [];
             sendChunk(wav);
           }
-          console.log("⏹️ Stop speaking (silence mode)");
         }
       }
 
-      // Hybrid mode
       if (mode === 'hybrid') {
         if (isSpeaking) {
           hybridChunksRef.current.push(buffer);
@@ -174,11 +163,9 @@ function AudioStreamer() {
             hybridChunksRef.current = [];
             sendChunk(wav);
           }
-          console.log("⏹️ Stop speaking / flush (hybrid mode)");
         }
       }
 
-      // For interval/full modes, we still store raw chunks
       if (mode === 'interval' || mode === 'full') {
         chunksRef.current.push(buffer);
         fullRecordingRef.current.push(buffer);
@@ -189,7 +176,6 @@ function AudioStreamer() {
     sourceRef.current = source;
     processorRef.current = processor;
   };
-
 
   const stopRecording = () => {
     if (processorRef.current) processorRef.current.disconnect();
@@ -278,7 +264,9 @@ function AudioStreamer() {
           {recording ? '🛑 Stop' : '🎙️ Start'}
         </button>
       </div>
-      <audio ref={audioRef} controls autoPlay />
+      <div className="text-sm text-gray-600">
+        {isPlaying ? '🔊 Spielt ab...' : '⏸️ Bereit'}
+      </div>
     </div>
   );
 }
