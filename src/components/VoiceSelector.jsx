@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react'
 import useVoiceStore from './../store/useVoiceStore';
+import { useLanguage } from '../context/LanguageContext';
 
 const VoiceSelector = () => {
   const [voices, setVoices] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { t } = useLanguage();
 
   const { selectedVoice, setSelectedVoice } = useVoiceStore();
 
@@ -27,10 +29,10 @@ const VoiceSelector = () => {
   return (
     <div className="p-4 max-w-xl mx-auto flex flex-col gap-4">
       {loading ? (
-        <p>Loading...</p>
+        <p>{t.loading}</p>
       ) : (
         <div className="flex gap-4">
-          <label htmlFor="voice">Choose Voice: </label>
+          <label htmlFor="voice">{t.chooseVoice}</label>
           <select
             id="voice"
             className="border px-2 py-1"

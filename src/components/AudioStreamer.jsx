@@ -1,5 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import useVoiceStore from "../store/useVoiceStore";
+import { useLanguage } from '../context/LanguageContext';
+import InstructionsPanel from './InstructionsPanel';
 
 const START_SPEAKING_THRESHOLD = 0.05;
 const STOP_SPEAKING_THRESHOLD = 0.01;
@@ -9,6 +11,8 @@ function AudioStreamer() {
   const [recording, setRecording] = useState(false);
   const [mode, setMode] = useState('interval');
   const [isPlaying, setIsPlaying] = useState(false);
+
+  const { t } = useLanguage();
 
   const audioContextRef = useRef(null);
   const sourceRef = useRef(null);
@@ -252,21 +256,22 @@ function AudioStreamer() {
           onChange={(e) => setMode(e.target.value)}
           disabled={recording}
         >
-          <option value="interval">Interval</option>
-          <option value="silence">Silence-Based</option>
-          <option value="hybrid">Hybrid</option>
-          <option value="full">Full Recording</option>
+          <option value="interval">{t.modes.interval}</option>
+          <option value="silence">{t.modes.silence}</option>
+          <option value="hybrid">{t.modes.hybrid}</option>
+          <option value="full">{t.modes.full}</option>
         </select>
         <button
           className={`px-4 py-2 text-white rounded ${recording ? 'bg-red-600' : 'bg-green-600'}`}
           onClick={recording ? stopRecording : startRecording}
         >
-          {recording ? '🛑 Stop' : '🎙️ Start'}
+          {recording ? t.stop : t.start}
         </button>
       </div>
       <div className="text-sm text-gray-600">
-        {isPlaying ? '🔊 Spielt ab...' : '⏸️ Bereit'}
+        {isPlaying ? t.playing : t.ready}
       </div>
+      <InstructionsPanel />
     </div>
   );
 }
