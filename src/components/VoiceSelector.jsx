@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { API_BASE } from '../apiBase';
 import useVoiceStore from './../store/useVoiceStore';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -10,7 +11,7 @@ const VoiceSelector = () => {
   const { selectedVoice, setSelectedVoice } = useVoiceStore();
 
   useEffect(() => {
-    fetch('/api/available_voices')
+    fetch(`${API_BASE}/available_voices`)
       .then((res) => res.json())
       .then((data) => {
         setLoading(false);

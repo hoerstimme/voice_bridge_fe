@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
+import { API_BASE } from '../apiBase';
 import useVoiceStore from "../store/useVoiceStore";
 import { useLanguage } from '../context/LanguageContext';
 import InstructionsPanel from './InstructionsPanel';
@@ -204,7 +205,7 @@ function AudioStreamer() {
     formData.append('audio_file', blob, 'chunk.wav');
     formData.append('voice_name', useVoiceStore.getState().selectedVoice);
     try {
-      const response = await fetch('/api/convert_voice_stream_bytes_webm', {
+      const response = await fetch(`${API_BASE}/convert_voice_stream_bytes_webm`, {
         method: 'POST',
         body: formData,
       });
