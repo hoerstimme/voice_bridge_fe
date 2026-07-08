@@ -11,8 +11,8 @@ export const translations = {
     },
     start: '🎙️ Start',
     stop: '🛑 Stop',
-    playing: '🔊 Playing...',
-    ready: '⏸️ Ready',
+    playing: 'Playing...',
+    ready: 'Ready',
     instructionsToggle: 'ℹ️ Instructions',
     instructionsTitle: 'How to use this demo',
     steps: [
@@ -34,8 +34,8 @@ export const translations = {
     },
     start: '🎙️ Start',
     stop: '🛑 Stopp',
-    playing: '🔊 Spielt ab...',
-    ready: '⏸️ Bereit',
+    playing: 'Spielt ab...',
+    ready: 'Bereit',
     instructionsToggle: 'ℹ️ Anleitung',
     instructionsTitle: 'So funktioniert die Bedienung',
     steps: [
