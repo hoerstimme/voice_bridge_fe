@@ -16,7 +16,7 @@ const Header = () => {
           {lang === 'en' ? 'DE' : 'EN'}
         </button>
       </div>
-      <p className="mt-3 text-gray-600 text-sm">{t.intro}</p>
+      <p className="mt-3 text-gray-600 text-sm whitespace-pre-line text-justify">{t.intro}</p>
     </div>
   );
 };
