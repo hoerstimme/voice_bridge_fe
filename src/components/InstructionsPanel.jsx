@@ -22,7 +22,7 @@ function InstructionsPanel() {
               <li key={i}>
                 <span className="font-medium">{step.heading}</span>
                 <br />
-                {step.text}
+                <span className="whitespace-pre-line">{step.text}</span>
               </li>
             ))}
           </ol>

@@ -18,7 +18,7 @@ export const translations = {
     instructionsTitle: 'How to use this demo',
     steps: [
       { heading: '1. Choose a voice', text: 'Select the target voice from the dropdown at the top.' },
-      { heading: '2. Choose a mode', text: 'Interval: sends a chunk every 2 seconds. Silence-Based: sends as soon as you pause speaking briefly. Hybrid: a mix of both. Full Recording: records everything and converts it only after you stop.' },
+      { heading: '2. Choose a mode', text: 'Interval: sends a chunk every 2 seconds. \nSilence-Based: sends as soon as you pause speaking briefly. \nHybrid: a mix of both. \nFull Recording: records everything and converts it only after you stop.' },
       { heading: '3. Start recording', text: 'Click "🎙️ Start" and allow microphone access if prompted. Speak normally — the converted voice will play back automatically shortly after.' },
       { heading: '4. Stop recording', text: 'Click "🛑 Stop" to end the recording.' },
     ],
@@ -42,7 +42,7 @@ export const translations = {
     instructionsTitle: 'So funktioniert die Bedienung',
     steps: [
       { heading: '1. Stimme wählen', text: 'Wähle oben im Dropdown die gewünschte Zielstimme aus.' },
-      { heading: '2. Modus wählen', text: 'Interval: sendet alle 2 Sekunden einen Ausschnitt. Silence-Based: sendet, sobald du eine kurze Sprechpause machst. Hybrid: Mischung aus beidem. Full Recording: nimmt alles auf und wandelt erst nach dem Stoppen um.' },
+      { heading: '2. Modus wählen', text: 'Interval: sendet alle 2 Sekunden einen Ausschnitt. \nSilence-Based: sendet, sobald du eine kurze Sprechpause machst. \nHybrid: Mischung aus beidem. \nFull Recording: nimmt alles auf und wandelt erst nach dem Stoppen um.' },
       { heading: '3. Aufnahme starten', text: 'Klicke auf „🎙️ Start" und erlaube den Mikrofonzugriff, falls gefragt. Sprich normal – die umgewandelte Stimme wird kurz danach automatisch abgespielt.' },
       { heading: '4. Aufnahme stoppen', text: 'Klicke auf „🛑 Stop", um die Aufnahme zu beenden.' },
     ],
