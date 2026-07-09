@@ -1,6 +1,7 @@
 export const translations = {
   en: {
     title: 'Hör-Stimme: Voice Bridge',
+    intro: 'Hörstimme transforms your voice into a different voice in real time — right in your browser, no installation required. Pick a target voice, start speaking, and hear the result instantly.',
     chooseVoice: 'Choose voice:',
     loading: 'Loading...',
     modes: {
@@ -24,6 +25,7 @@ export const translations = {
   },
   de: {
     title: 'Hör-Stimme: Voice Bridge',
+    intro: 'Hörstimme wandelt deine Stimme in Echtzeit in eine andere Stimme um – direkt im Browser, ganz ohne Installation. Wähle eine Zielstimme, sprich einfach los, und hör dir sofort an, wie es klingt.',
     chooseVoice: 'Stimme wählen:',
     loading: 'Lädt...',
     modes: {
