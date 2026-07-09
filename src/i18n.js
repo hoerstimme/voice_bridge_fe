@@ -1,7 +1,7 @@
 export const translations = {
   en: {
     title: 'Hör-Stimme: Voice Bridge',
-    intro: 'Hörstimme transforms your voice into a different voice in real time — right in your browser, no installation required. Pick a target voice, start speaking, and hear the result instantly.',
+    intro: 'Hörstimme transforms your voice into a different voice in real time — right in your browser, no installation required.\nPick a target voice, start speaking, and hear the result instantly.\n\nThe app was originally built as a communication aid for a user who is nearly deaf: instead of reading captions and missing eye contact and facial expressions, they can convert a conversation partner\'s voice into one that\'s easier to perceive — live, as the conversation happens.',
     chooseVoice: 'Choose voice:',
     loading: 'Loading...',
     modes: {
@@ -25,7 +25,7 @@ export const translations = {
   },
   de: {
     title: 'Hör-Stimme: Voice Bridge',
-    intro: 'Hörstimme wandelt deine Stimme in Echtzeit in eine andere Stimme um – direkt im Browser, ganz ohne Installation. Wähle eine Zielstimme, sprich einfach los, und hör dir sofort an, wie es klingt.',
+    intro: 'Hörstimme wandelt deine Stimme in Echtzeit in eine andere Stimme um – direkt im Browser, ganz ohne Installation.\nWähle eine Zielstimme, sprich einfach los, und hör dir sofort an, wie es klingt.\n\nEntwickelt wurde die App ursprünglich als Kommunikationshilfe für eine fast taube Person: Statt Untertitel zu lesen und dabei Blickkontakt sowie Mimik zu verpassen, lässt sich die Stimme des Gegenübers in eine besser wahrnehmbare Stimme umwandeln – live, während das Gespräch läuft.',
     chooseVoice: 'Stimme wählen:',
     loading: 'Lädt...',
     modes: {
